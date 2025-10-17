@@ -815,7 +815,212 @@ body {
         padding: 20px;
     }
 }
+/* إضافة هذه الأنماط لملف dashboard.css الحالي */
 
+/* حالة العناصر الفارغة */
+.empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--gray);
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+.empty-state p {
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+/* حالات التحاليل */
+.test-status {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.test-status.normal {
+    background: rgba(46, 204, 113, 0.1);
+    color: var(--success);
+}
+
+.test-status.warning {
+    background: rgba(243, 156, 18, 0.1);
+    color: var(--warning);
+}
+
+.test-status.critical {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--danger);
+}
+
+.test-status.pending {
+    background: rgba(108, 117, 125, 0.1);
+    color: var(--gray);
+}
+
+/* حالات الإشعارات */
+.notification-item {
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.notification-item.urgent {
+    border-right: 3px solid var(--danger);
+}
+
+.notification-item.reminder {
+    border-right: 3px solid var(--info);
+}
+
+.notification-item.info {
+    border-right: 3px solid var(--primary);
+}
+
+.notification-item:hover {
+    background: var(--gray-light);
+}
+
+.notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.notification-item.urgent .notification-icon {
+    background: rgba(231, 76, 60, 0.1);
+    color: var(--danger);
+}
+
+.notification-item.reminder .notification-icon {
+    background: rgba(23, 162, 184, 0.1);
+    color: var(--info);
+}
+
+.notification-item.info .notification-icon {
+    background: rgba(42, 125, 225, 0.1);
+    color: var(--primary);
+}
+
+.notification-content {
+    flex: 1;
+}
+
+.notification-content h4 {
+    margin-bottom: 5px;
+    color: var(--dark);
+    font-size: 14px;
+}
+
+.notification-content p {
+    color: var(--gray);
+    font-size: 13px;
+    margin-bottom: 5px;
+}
+
+.notification-time {
+    font-size: 11px;
+    color: var(--gray);
+}
+
+/* شارة الحالة */
+.status-badge {
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.status-badge.new {
+    background: rgba(42, 125, 225, 0.1);
+    color: var(--primary);
+}
+
+/* تأثيرات التفاعل */
+.patient-item,
+.test-item {
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.patient-item:hover,
+.test-item:hover {
+    background: var(--gray-light);
+    transform: translateX(-5px);
+}
+
+/* تحسينات للهواتف */
+@media (max-width: 768px) {
+    .test-item {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .test-status {
+        margin-right: auto;
+    }
+    
+    .notification-item {
+        flex-wrap: wrap;
+    }
+    
+    .notification-content {
+        min-width: 200px;
+    }
+}
+
+/* تحسينات إضافية للواجهة */
+.stat-card {
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, transparent 0%, rgba(255,255,255,0.1) 100%);
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.stat-card:hover::before {
+    opacity: 1;
+}
+
+.action-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.action-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    transition: right 0.5s;
+}
+
+.action-btn:hover::before {
+    right: 100%;
+}
 /* تخصيص شريط التمرير */
 .patients-list::-webkit-scrollbar,
 .tests-list::-webkit-scrollbar,

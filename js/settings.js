@@ -1,17 +1,92 @@
-// إدارة الإعدادات والمزيد
+// إدارة الإعدادات - معدل ليعمل ببيانات حقيقية
 class SettingsManager {
     constructor() {
+        this.currentUser = JSON.parse(localStorage.getItem('medical_currentUser')) || null;
+        this.settings = JSON.parse(localStorage.getItem('medical_settings')) || this.getDefaultSettings();
         this.currentSection = 'profile';
-        this.settings = JSON.parse(localStorage.getItem('appSettings')) || this.getDefaultSettings();
         
         this.init();
     }
 
     init() {
+        if (!this.currentUser) {
+            window.location.href = 'login.html';
+            return;
+        }
+        
         this.setupNavigation();
         this.loadSettings();
         this.setupEventListeners();
         this.setupPasswordStrength();
+        this.updateUserInfo();
+        this.setupMobileMenu();
+    }
+
+    setupMobileMenu() {
+        const menuToggle = document.querySelector('.menu-toggle');
+        const closeSidebar = document.querySelector('.close-sidebar');
+        const sidebar = document.querySelector('.sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+
+        if (menuToggle) {
+            menuToggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                sidebar.classList.add('show');
+                if (overlay) overlay.style.display = 'block';
+                document.body.style.overflow = 'hidden';
+            });
+        }
+
+        if (closeSidebar) {
+            closeSidebar.addEventListener('click', (e) => {
+                e.preventDefault();
+                sidebar.classList.remove('show');
+                if (overlay) overlay.style.display = 'none';
+                document.body.style.overflow = '';
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', (e) => {
+                e.preventDefault();
+                sidebar.classList.remove('show');
+                overlay.style.display = 'none';
+                document.body.style.overflow = '';
+            });
+        }
+
+        const navLinks = document.querySelectorAll('.sidebar-nav a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                sidebar.classList.remove('show');
+                if (overlay) overlay.style.display = 'none';
+                document.body.style.overflow = '';
+            });
+        });
+    }
+
+    updateUserInfo() {
+        const userName = document.querySelector('.user-name');
+        const userRole = document.querySelector('.user-role');
+
+        if (this.currentUser && userName && userRole) {
+            const displayName = `د. ${this.currentUser.firstName} ${this.currentUser.lastName}`;
+            const specialty = this.getSpecialtyText(this.currentUser.specialty);
+
+            userName.textContent = displayName;
+            userRole.textContent = specialty;
+        }
+    }
+
+    getSpecialtyText(specialty) {
+        const specialties = {
+            'general': 'طب عام',
+            'internal': 'باطنية',
+            'cardiology': 'قلب',
+            'endocrinology': 'غدد صماء',
+            'other': 'طبيب'
+        };
+        return specialties[specialty] || 'طبيب';
     }
 
     setupNavigation() {
@@ -45,13 +120,13 @@ class SettingsManager {
     getDefaultSettings() {
         return {
             profile: {
-                name: 'د. أسامه منصور',
-                email: 'ahmed@hospital.com',
-                phone: '+966500000000',
-                specialty: 'طبيب استشاري',
+                name: this.currentUser ? `د. ${this.currentUser.firstName} ${this.currentUser.lastName}` : 'د. أسامه منصور',
+                email: this.currentUser ? this.currentUser.email : 'ahmed@hospital.com',
+                phone: this.currentUser ? this.currentUser.phone : '+966500000000',
+                specialty: this.currentUser ? this.currentUser.specialty : 'طبيب استشاري',
                 clinic: 'مستشفى الملك فهد',
-                license: 'MED-123456',
-                bio: 'طبيب استشاري متخصص في الأمراض الباطنية والتحاليل الطبية...'
+                license: this.currentUser ? this.currentUser.license : 'MED-123456',
+                bio: 'طبيب استشاري متخصص في الأمراض الباطنية والتحاليل الطبية. حاصل على شهادة البورد العربي وعدد من الشهادات الدولية في مجال التحاليل الطبية والتشخيص.'
             },
             preferences: {
                 language: 'ar',
@@ -64,23 +139,10 @@ class SettingsManager {
                 autoSave: 5,
                 autoLogout: true
             },
-            notifications: {
-                newPatient: true,
-                patientUpdate: true,
-                newTest: true,
-                criticalResults: true,
-                testReminder: false,
-                systemUpdates: true,
-                backupReminder: false,
-                securityAlerts: true,
-                email: true,
-                browser: true,
-                sms: false,
-                push: false
-            },
+            notifications: this.getDefaultNotificationSettings(),
             security: {
                 lastPasswordChange: new Date().toISOString(),
-                sessions: []
+                sessions: this.getUserSessions()
             },
             backup: {
                 autoBackup: true,
@@ -95,6 +157,50 @@ class SettingsManager {
         };
     }
 
+    getDefaultNotificationSettings() {
+        return {
+            newPatient: true,
+            patientUpdate: true,
+            newTest: true,
+            criticalResults: true,
+            testReminder: false,
+            systemUpdates: true,
+            backupReminder: false,
+            securityAlerts: true,
+            email: true,
+            browser: true,
+            sms: false,
+            push: false,
+            quietHours: {
+                enabled: false,
+                start: '22:00',
+                end: '07:00',
+                exceptCritical: true
+            }
+        };
+    }
+
+    getUserSessions() {
+        return [
+            {
+                id: 'session_1',
+                device: 'جهاز الكمبيوتر - Windows',
+                location: 'الرياض، السعودية',
+                ip: '192.168.1.100',
+                lastActive: new Date().toISOString(),
+                current: true
+            },
+            {
+                id: 'session_2',
+                device: 'هاتف iPhone - iOS',
+                location: 'جدة، السعودية',
+                ip: '192.168.1.101',
+                lastActive: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+                current: false
+            }
+        ];
+    }
+
     loadSettings() {
         // تحميل إعدادات الملف الشخصي
         this.loadProfileSettings();
@@ -107,58 +213,195 @@ class SettingsManager {
         
         // تحميل إعدادات النسخ الاحتياطي
         this.loadBackupSettings();
+        
+        // تحميل معلومات الأمان
+        this.loadSecurityInfo();
     }
 
     loadProfileSettings() {
         const profile = this.settings.profile;
         
-        document.getElementById('user-name').value = profile.name;
-        document.getElementById('user-email').value = profile.email;
-        document.getElementById('user-phone').value = profile.phone;
-        document.getElementById('user-specialty').value = profile.specialty;
-        document.getElementById('user-clinic').value = profile.clinic;
-        document.getElementById('user-license').value = profile.license;
-        document.getElementById('user-bio').value = profile.bio;
+        this.setValue('user-name', profile.name);
+        this.setValue('user-email', profile.email);
+        this.setValue('user-phone', profile.phone);
+        this.setValue('user-specialty', profile.specialty);
+        this.setValue('user-clinic', profile.clinic);
+        this.setValue('user-license', profile.license);
+        this.setValue('user-bio', profile.bio);
+
+        // تحديث الإحصائيات
+        this.updateProfileStats();
+    }
+
+    updateProfileStats() {
+        const patients = JSON.parse(localStorage.getItem('medical_patients')) || [];
+        const tests = JSON.parse(localStorage.getItem('medical_tests')) || [];
+        
+        const userPatients = patients.filter(patient => patient.createdBy === this.currentUser.id);
+        const userTests = tests.filter(test => test.createdBy === this.currentUser.id);
+        
+        const thisMonth = new Date().getMonth();
+        const recentTests = userTests.filter(test => {
+            const testDate = new Date(test.createdAt);
+            return testDate.getMonth() === thisMonth;
+        });
+
+        // تحديث الإحصائيات
+        const statElements = document.querySelectorAll('.stat-number');
+        if (statElements.length >= 3) {
+            statElements[0].textContent = userPatients.length;
+            statElements[1].textContent = recentTests.length;
+            statElements[2].textContent = userTests.length;
+        }
     }
 
     loadPreferenceSettings() {
         const prefs = this.settings.preferences;
         
-        document.getElementById('pref-language').value = prefs.language;
-        document.getElementById('pref-theme').value = prefs.theme;
-        document.getElementById('pref-timezone').value = prefs.timezone;
-        document.getElementById('pref-compact').checked = prefs.compactMode;
-        document.getElementById('pref-animations').checked = prefs.animations;
-        document.getElementById('pref-highcontrast').checked = prefs.highContrast;
-        document.getElementById('pref-page-size').value = prefs.pageSize;
-        document.getElementById('pref-auto-save').value = prefs.autoSave;
-        document.getElementById('pref-auto-logout').checked = prefs.autoLogout;
+        this.setValue('pref-language', prefs.language);
+        this.setValue('pref-theme', prefs.theme);
+        this.setValue('pref-timezone', prefs.timezone);
+        this.setChecked('pref-compact', prefs.compactMode);
+        this.setChecked('pref-animations', prefs.animations);
+        this.setChecked('pref-highcontrast', prefs.highContrast);
+        this.setValue('pref-page-size', prefs.pageSize);
+        this.setValue('pref-auto-save', prefs.autoSave);
+        this.setChecked('pref-auto-logout', prefs.autoLogout);
     }
 
     loadNotificationSettings() {
         const notifs = this.settings.notifications;
         
-        document.getElementById('notif-new-patient').checked = notifs.newPatient;
-        document.getElementById('notif-patient-update').checked = notifs.patientUpdate;
-        document.getElementById('notif-new-test').checked = notifs.newTest;
-        document.getElementById('notif-critical-results').checked = notifs.criticalResults;
-        document.getElementById('notif-test-reminder').checked = notifs.testReminder;
-        document.getElementById('notif-system-updates').checked = notifs.systemUpdates;
-        document.getElementById('notif-backup-reminder').checked = notifs.backupReminder;
-        document.getElementById('notif-security-alerts').checked = notifs.securityAlerts;
+        this.setChecked('notif-new-patient', notifs.newPatient);
+        this.setChecked('notif-patient-update', notifs.patientUpdate);
+        this.setChecked('notif-new-test', notifs.newTest);
+        this.setChecked('notif-critical-results', notifs.criticalResults);
+        this.setChecked('notif-test-reminder', notifs.testReminder);
+        this.setChecked('notif-system-updates', notifs.systemUpdates);
+        this.setChecked('notif-backup-reminder', notifs.backupReminder);
+        this.setChecked('notif-security-alerts', notifs.securityAlerts);
         
-        document.getElementById('channel-email').checked = notifs.email;
-        document.getElementById('channel-browser').checked = notifs.browser;
-        document.getElementById('channel-sms').checked = notifs.sms;
-        document.getElementById('channel-push').checked = notifs.push;
+        this.setChecked('channel-email', notifs.email);
+        this.setChecked('channel-browser', notifs.browser);
+        this.setChecked('channel-sms', notifs.sms);
+        this.setChecked('channel-push', notifs.push);
+
+        // إعدادات ساعات الهدوء
+        this.setChecked('quiet-hours-enabled', notifs.quietHours.enabled);
+        this.setValue('quiet-start', notifs.quietHours.start);
+        this.setValue('quiet-end', notifs.quietHours.end);
+        this.setChecked('quiet-critical', notifs.quietHours.exceptCritical);
     }
 
     loadBackupSettings() {
         const backup = this.settings.backup;
         
-        document.getElementById('auto-backup').checked = backup.autoBackup;
-        document.getElementById('backup-retention').value = backup.retention;
-        document.getElementById('backup-format').value = backup.format;
+        this.setChecked('auto-backup', backup.autoBackup);
+        this.setValue('backup-retention', backup.retention);
+        this.setValue('backup-format', backup.format);
+
+        // تحديث معلومات النسخ الاحتياطي
+        this.updateBackupInfo();
+    }
+
+    updateBackupInfo() {
+        const patients = JSON.parse(localStorage.getItem('medical_patients')) || [];
+        const tests = JSON.parse(localStorage.getItem('medical_tests')) || [];
+        
+        const userPatients = patients.filter(patient => patient.createdBy === this.currentUser.id);
+        const userTests = tests.filter(test => test.createdBy === this.currentUser.id);
+
+        const totalRecords = userPatients.length + userTests.length;
+        const estimatedSize = (totalRecords * 2).toFixed(1); // تقدير حجم البيانات
+
+        // تحديث المعلومات في واجهة المستخدم
+        const backupStats = document.querySelectorAll('.backup-stat .stat-value');
+        if (backupStats.length >= 3) {
+            const now = new Date();
+            const threeDaysAgo = new Date(now - 3 * 24 * 60 * 60 * 1000);
+            
+            backupStats[0].textContent = `منذ 3 أيام`;
+            backupStats[1].textContent = `${estimatedSize} KB`;
+            backupStats[2].textContent = totalRecords;
+        }
+    }
+
+    loadSecurityInfo() {
+        const security = this.settings.security;
+        
+        // تحميل جلسات المستخدم
+        this.loadSessionsList();
+        
+        // تحميل سجل النشاط
+        this.loadActivityLog();
+    }
+
+    loadSessionsList() {
+        const sessionsList = document.querySelector('.sessions-list');
+        if (!sessionsList) return;
+
+        const sessions = this.settings.security.sessions;
+        
+        sessionsList.innerHTML = sessions.map(session => `
+            <div class="session-item ${session.current ? 'current' : ''}">
+                <div class="session-info">
+                    <div class="session-device">
+                        <i class="fas ${session.device.includes('iPhone') ? 'fa-mobile-alt' : 'fa-desktop'}"></i>
+                        <span>${session.device}</span>
+                    </div>
+                    <div class="session-meta">
+                        <span>${session.current ? 'جلسة نشطة' : `آخر نشاط: ${this.getTimeAgo(session.lastActive)}`}</span>
+                        <span>${session.location}</span>
+                    </div>
+                </div>
+                <div class="session-actions">
+                    <span class="session-time">${this.getTimeAgo(session.lastActive)}</span>
+                    ${!session.current ? `
+                        <button class="btn-danger btn-sm" onclick="settingsManager.logoutSession('${session.id}')">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    loadActivityLog() {
+        const activityList = document.querySelector('.activity-list');
+        if (!activityList) return;
+
+        const activities = [
+            {
+                type: 'success',
+                icon: 'fa-sign-in-alt',
+                title: 'تسجيل دخول ناجح',
+                meta: 'جهاز الكمبيوتر - منذ 2 ساعة'
+            },
+            {
+                type: 'info',
+                icon: 'fa-user-edit',
+                title: 'تحديث الملف الشخصي',
+                meta: 'منذ 3 أيام'
+            },
+            {
+                type: 'warning',
+                icon: 'fa-key',
+                title: 'محاولة تغيير كلمة المرور',
+                meta: 'منذ أسبوع'
+            }
+        ];
+
+        activityList.innerHTML = activities.map(activity => `
+            <div class="activity-item">
+                <div class="activity-icon ${activity.type}">
+                    <i class="fas ${activity.icon}"></i>
+                </div>
+                <div class="activity-content">
+                    <div class="activity-title">${activity.title}</div>
+                    <div class="activity-meta">${activity.meta}</div>
+                </div>
+            </div>
+        `).join('');
     }
 
     setupEventListeners() {
@@ -180,23 +423,52 @@ class SettingsManager {
             });
         }
 
-        // تفعيل زر الاستعادة
-        const restoreConfirm = document.getElementById('restore-confirm');
-        const restoreBtn = document.querySelector('.btn-warning');
-        
-        if (restoreConfirm && restoreBtn) {
-            restoreConfirm.addEventListener('change', (e) => {
-                restoreBtn.disabled = !e.target.checked;
-            });
+        // حفظ التفضيلات
+        const savePrefsBtn = document.querySelector('.btn-primary[onclick*="savePreferences"]');
+        if (savePrefsBtn) {
+            savePrefsBtn.addEventListener('click', () => this.savePreferences());
+        }
+
+        // إعادة تعيين التفضيلات
+        const resetPrefsBtn = document.querySelector('.btn-secondary[onclick*="resetPreferences"]');
+        if (resetPrefsBtn) {
+            resetPrefsBtn.addEventListener('click', () => this.resetPreferences());
+        }
+
+        // حفظ إعدادات الإشعارات
+        const saveNotifBtn = document.querySelector('.btn-primary[onclick*="saveNotificationSettings"]');
+        if (saveNotifBtn) {
+            saveNotifBtn.addEventListener('click', () => this.saveNotificationSettings());
+        }
+
+        // النسخ الاحتياطي
+        const createBackupBtn = document.querySelector('.btn-primary[onclick*="createBackup"]');
+        if (createBackupBtn) {
+            createBackupBtn.addEventListener('click', () => this.createBackup());
         }
 
         // جدولة النسخ الاحتياطي
-        const scheduleForm = document.getElementById('scheduleForm');
-        if (scheduleForm) {
-            scheduleForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.saveBackupSchedule();
-            });
+        const scheduleBackupBtn = document.querySelector('.btn-secondary[onclick*="scheduleBackup"]');
+        if (scheduleBackupBtn) {
+            scheduleBackupBtn.addEventListener('click', () => this.scheduleBackup());
+        }
+
+        // استعادة النسخ الاحتياطي
+        const restoreBackupBtn = document.querySelector('.btn-warning[onclick*="restoreBackup"]');
+        if (restoreBackupBtn) {
+            restoreBackupBtn.addEventListener('click', () => this.restoreBackup());
+        }
+
+        // تصدير البيانات
+        const exportDataBtn = document.querySelector('.btn-secondary[onclick*="exportData"]');
+        if (exportDataBtn) {
+            exportDataBtn.addEventListener('click', () => this.exportData());
+        }
+
+        // التحقق من التحديثات
+        const checkUpdatesBtn = document.querySelector('.btn-secondary[onclick*="checkForUpdates"]');
+        if (checkUpdatesBtn) {
+            checkUpdatesBtn.addEventListener('click', () => this.checkForUpdates());
         }
 
         // إغلاق النماذج
@@ -206,6 +478,32 @@ class SettingsManager {
                 this.hideModal('scheduleModal');
             });
         });
+
+        // تفعيل زر الاستعادة
+        const restoreConfirm = document.getElementById('restore-confirm');
+        const restoreBtn = document.querySelector('.btn-warning[onclick*="restoreBackup"]');
+        
+        if (restoreConfirm && restoreBtn) {
+            restoreConfirm.addEventListener('change', (e) => {
+                restoreBtn.disabled = !e.target.checked;
+            });
+        }
+        
+
+        // تسجيل الخروج
+        const logoutBtn = document.querySelector('.logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (window.authManager) {
+                    window.authManager.logout();
+                } else {
+                    localStorage.removeItem('medical_currentUser');
+                    window.location.href = 'index.html';
+                }
+            });
+            
+        }
     }
 
     setupPasswordStrength() {
@@ -221,6 +519,7 @@ class SettingsManager {
                 strengthBar.style.width = strength.percentage + '%';
                 strengthBar.style.backgroundColor = strength.color;
                 strengthText.textContent = strength.text;
+                strengthText.style.color = strength.color;
             });
         }
     }
@@ -247,13 +546,13 @@ class SettingsManager {
 
     saveProfile() {
         const profile = {
-            name: document.getElementById('user-name').value,
-            email: document.getElementById('user-email').value,
-            phone: document.getElementById('user-phone').value,
-            specialty: document.getElementById('user-specialty').value,
-            clinic: document.getElementById('user-clinic').value,
-            license: document.getElementById('user-license').value,
-            bio: document.getElementById('user-bio').value
+            name: this.getValue('user-name'),
+            email: this.getValue('user-email'),
+            phone: this.getValue('user-phone'),
+            specialty: this.getValue('user-specialty'),
+            clinic: this.getValue('user-clinic'),
+            license: this.getValue('user-license'),
+            bio: this.getValue('user-bio')
         };
 
         this.settings.profile = profile;
@@ -263,15 +562,15 @@ class SettingsManager {
 
     savePreferences() {
         const preferences = {
-            language: document.getElementById('pref-language').value,
-            theme: document.getElementById('pref-theme').value,
-            timezone: document.getElementById('pref-timezone').value,
-            compactMode: document.getElementById('pref-compact').checked,
-            animations: document.getElementById('pref-animations').checked,
-            highContrast: document.getElementById('pref-highcontrast').checked,
-            pageSize: parseInt(document.getElementById('pref-page-size').value),
-            autoSave: parseInt(document.getElementById('pref-auto-save').value),
-            autoLogout: document.getElementById('pref-auto-logout').checked
+            language: this.getValue('pref-language'),
+            theme: this.getValue('pref-theme'),
+            timezone: this.getValue('pref-timezone'),
+            compactMode: this.isChecked('pref-compact'),
+            animations: this.isChecked('pref-animations'),
+            highContrast: this.isChecked('pref-highcontrast'),
+            pageSize: parseInt(this.getValue('pref-page-size')),
+            autoSave: parseInt(this.getValue('pref-auto-save')),
+            autoLogout: this.isChecked('pref-auto-logout')
         };
 
         this.settings.preferences = preferences;
@@ -285,12 +584,8 @@ class SettingsManager {
 
     applyPreferences(preferences) {
         // تطبيق اللغة
-        if (preferences.language === 'en') {
-            document.documentElement.lang = 'en';
-            document.documentElement.dir = 'ltr';
-        } else {
-            document.documentElement.lang = 'ar';
-            document.documentElement.dir = 'rtl';
+        if (window.languageManager) {
+            window.languageManager.switchLanguage(preferences.language);
         }
 
         // تطبيق السمة
@@ -298,13 +593,18 @@ class SettingsManager {
     }
 
     applyTheme(theme) {
-        document.body.classList.remove('theme-light', 'theme-dark');
+        document.body.classList.remove('theme-light', 'theme-dark', 'theme-auto');
         
         if (theme === 'dark') {
             document.body.classList.add('theme-dark');
         } else if (theme === 'auto') {
+            document.body.classList.add('theme-auto');
             // يمكن إضافة كشف تلقائي للوضع المظلم
-            document.body.classList.add('theme-light');
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.body.classList.add('theme-dark');
+            } else {
+                document.body.classList.add('theme-light');
+            }
         } else {
             document.body.classList.add('theme-light');
         }
@@ -321,18 +621,24 @@ class SettingsManager {
 
     saveNotificationSettings() {
         const notifications = {
-            newPatient: document.getElementById('notif-new-patient').checked,
-            patientUpdate: document.getElementById('notif-patient-update').checked,
-            newTest: document.getElementById('notif-new-test').checked,
-            criticalResults: document.getElementById('notif-critical-results').checked,
-            testReminder: document.getElementById('notif-test-reminder').checked,
-            systemUpdates: document.getElementById('notif-system-updates').checked,
-            backupReminder: document.getElementById('notif-backup-reminder').checked,
-            securityAlerts: document.getElementById('notif-security-alerts').checked,
-            email: document.getElementById('channel-email').checked,
-            browser: document.getElementById('channel-browser').checked,
-            sms: document.getElementById('channel-sms').checked,
-            push: document.getElementById('channel-push').checked
+            newPatient: this.isChecked('notif-new-patient'),
+            patientUpdate: this.isChecked('notif-patient-update'),
+            newTest: this.isChecked('notif-new-test'),
+            criticalResults: this.isChecked('notif-critical-results'),
+            testReminder: this.isChecked('notif-test-reminder'),
+            systemUpdates: this.isChecked('notif-system-updates'),
+            backupReminder: this.isChecked('notif-backup-reminder'),
+            securityAlerts: this.isChecked('notif-security-alerts'),
+            email: this.isChecked('channel-email'),
+            browser: this.isChecked('channel-browser'),
+            sms: this.isChecked('channel-sms'),
+            push: this.isChecked('channel-push'),
+            quietHours: {
+                enabled: this.isChecked('quiet-hours-enabled'),
+                start: this.getValue('quiet-start'),
+                end: this.getValue('quiet-end'),
+                exceptCritical: this.isChecked('quiet-critical')
+            }
         };
 
         this.settings.notifications = notifications;
@@ -341,9 +647,14 @@ class SettingsManager {
     }
 
     changePassword() {
-        const currentPassword = document.getElementById('current-password').value;
-        const newPassword = document.getElementById('new-password').value;
-        const confirmPassword = document.getElementById('confirm-password').value;
+        const currentPassword = this.getValue('current-password');
+        const newPassword = this.getValue('new-password');
+        const confirmPassword = this.getValue('confirm-password');
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            this.showNotification('يرجى ملء جميع الحقول', 'error');
+            return;
+        }
 
         if (newPassword !== confirmPassword) {
             this.showNotification('كلمتا المرور غير متطابقتين', 'error');
@@ -355,30 +666,47 @@ class SettingsManager {
             return;
         }
 
-        // هنا سيتم التحقق من كلمة المرور الحالية مع الخادم
+        // في التطبيق الحقيقي، هنا سيتم التحقق من كلمة المرور الحالية مع الخادم
         // هذا تنفيذ مبسط للعرض
 
         this.settings.security.lastPasswordChange = new Date().toISOString();
         this.saveSettings();
         
+        // إعادة تعيين النموذج
         document.getElementById('passwordForm').reset();
+        
         this.showNotification('تم تغيير كلمة المرور بنجاح', 'success');
     }
 
     logoutSession(sessionId) {
         if (confirm('هل تريد تسجيل الخروج من هذا الجهاز؟')) {
-            // تنفيذ تسجيل الخروج من الجلسة
+            // في التطبيق الحقيقي، هنا سيتم إزالة الجلسة
+            this.settings.security.sessions = this.settings.security.sessions.filter(
+                session => session.id !== sessionId
+            );
+            this.saveSettings();
+            this.loadSessionsList();
             this.showNotification('تم تسجيل الخروج من الجلسة', 'success');
         }
     }
 
     logoutAllSessions() {
         if (confirm('هل تريد تسجيل الخروج من جميع الأجهزة؟ هذا سيؤدي إلى خروجك من الجهاز الحالي أيضاً.')) {
-            // تنفيذ تسجيل الخروج من جميع الجلسات
-            setTimeout(() => {
-                window.location.href = 'index.html';
-            }, 2000);
+            // في التطبيق الحقيقي، هنا سيتم إزالة جميع الجلسات
+            this.settings.security.sessions = this.settings.security.sessions.filter(
+                session => session.current
+            );
+            this.saveSettings();
             this.showNotification('جاري تسجيل الخروج من جميع الأجهزة...', 'info');
+            
+            setTimeout(() => {
+                if (window.authManager) {
+                    window.authManager.logout();
+                } else {
+                    localStorage.removeItem('medical_currentUser');
+                    window.location.href = 'index.html';
+                }
+            }, 2000);
         }
     }
 
@@ -391,12 +719,20 @@ class SettingsManager {
         
         // محاكاة عملية النسخ الاحتياطي
         setTimeout(() => {
+            const patients = JSON.parse(localStorage.getItem('medical_patients')) || [];
+            const tests = JSON.parse(localStorage.getItem('medical_tests')) || [];
+            const users = JSON.parse(localStorage.getItem('medical_users')) || [];
+            
+            const userPatients = patients.filter(patient => patient.createdBy === this.currentUser.id);
+            const userTests = tests.filter(test => test.createdBy === this.currentUser.id);
+
             const backupData = {
-                patients: JSON.parse(localStorage.getItem('patients')) || [],
-                tests: JSON.parse(localStorage.getItem('medicalTests')) || [],
-                reports: JSON.parse(localStorage.getItem('savedReports')) || [],
+                patients: userPatients,
+                tests: userTests,
                 settings: this.settings,
-                timestamp: new Date().toISOString()
+                user: this.currentUser,
+                timestamp: new Date().toISOString(),
+                version: '1.0.0'
             };
 
             // تنزيل الملف
@@ -424,9 +760,9 @@ class SettingsManager {
 
     saveBackupSchedule() {
         const schedule = {
-            frequency: document.getElementById('schedule-frequency').value,
-            day: parseInt(document.getElementById('schedule-day').value),
-            time: document.getElementById('schedule-time').value
+            frequency: this.getValue('schedule-frequency'),
+            day: parseInt(this.getValue('schedule-day')),
+            time: this.getValue('schedule-time')
         };
 
         this.settings.backup.schedule = schedule;
@@ -458,6 +794,49 @@ class SettingsManager {
         }, 2000);
     }
 
+    // دوال مساعدة
+    setValue(id, value) {
+        const element = document.getElementById(id);
+        if (element) element.value = value;
+    }
+
+    getValue(id) {
+        const element = document.getElementById(id);
+        return element ? element.value : '';
+    }
+
+    setChecked(id, checked) {
+        const element = document.getElementById(id);
+        if (element) element.checked = checked;
+    }
+
+    isChecked(id) {
+        const element = document.getElementById(id);
+        return element ? element.checked : false;
+    }
+
+    getTimeAgo(timestamp) {
+        const date = new Date(timestamp);
+        const now = new Date();
+        const diff = now - date;
+        
+        const minutes = Math.floor(diff / 60000);
+        const hours = Math.floor(diff / 3600000);
+        const days = Math.floor(diff / 86400000);
+
+        if (minutes < 1) {
+            return 'الآن';
+        } else if (minutes < 60) {
+            return `منذ ${minutes} دقيقة`;
+        } else if (hours < 24) {
+            return `منذ ${hours} ساعة`;
+        } else if (days < 7) {
+            return `منذ ${days} يوم`;
+        } else {
+            return date.toLocaleDateString('ar-EG');
+        }
+    }
+
     showModal(modalId) {
         const modal = document.getElementById(modalId);
         if (modal) {
@@ -473,45 +852,48 @@ class SettingsManager {
     }
 
     saveSettings() {
-        localStorage.setItem('appSettings', JSON.stringify(this.settings));
+        localStorage.setItem('medical_settings', JSON.stringify(this.settings));
     }
 
     showNotification(message, type = 'info') {
-        // إنشاء عنصر الإشعار
-        const notification = document.createElement('div');
-        notification.className = `notification notification-${type}`;
-        notification.innerHTML = `
-            <div class="notification-content">
-                <i class="fas fa-${this.getNotificationIcon(type)}"></i>
-                <span>${message}</span>
-            </div>
-        `;
-        
-        // إضافة الأنماط
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: white;
-            padding: 15px 20px;
-            border-radius: var(--border-radius);
-            box-shadow: var(--box-shadow);
-            border-right: 4px solid ${this.getNotificationColor(type)};
-            z-index: 3000;
-            animation: slideIn 0.3s ease;
-        `;
-        
-        document.body.appendChild(notification);
-        
-        // إزالة الإشعار بعد 3 ثوان
-        setTimeout(() => {
-            notification.style.animation = 'slideOut 0.3s ease';
+        // استخدام نظام الإشعارات من authManager إذا كان متاحاً
+        if (window.authManager && window.authManager.showNotification) {
+            window.authManager.showNotification(message, type);
+        } else {
+            // تنفيذ بدائي للإشعارات
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <div class="notification-content">
+                    <i class="fas fa-${this.getNotificationIcon(type)}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                left: 20px;
+                background: white;
+                padding: 15px 20px;
+                border-radius: 12px;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                border-right: 4px solid ${this.getNotificationColor(type)};
+                z-index: 3000;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            document.body.appendChild(notification);
+            
             setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.parentNode.removeChild(notification);
-                }
-            }, 300);
-        }, 3000);
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
     }
 
     getNotificationIcon(type) {
@@ -526,12 +908,12 @@ class SettingsManager {
 
     getNotificationColor(type) {
         const colors = {
-            'success': 'var(--success)',
-            'error': 'var(--danger)',
-            'warning': 'var(--warning)',
-            'info': 'var(--info)'
+            'success': '#2ecc71',
+            'error': '#e74c3c',
+            'warning': '#f39c12',
+            'info': '#3498db'
         };
-        return colors[type] || 'var(--info)';
+        return colors[type] || '#3498db';
     }
 }
 
@@ -539,26 +921,3 @@ class SettingsManager {
 document.addEventListener('DOMContentLoaded', function() {
     window.settingsManager = new SettingsManager();
 });
-
-// تفعيل تبديل اللغة
-function initLanguageSwitcher() {
-    const langBtn = document.querySelector('.lang-btn');
-    
-    if (langBtn) {
-        langBtn.addEventListener('click', function() {
-            const currentLang = document.documentElement.lang;
-            const langText = this.querySelector('span');
-            
-            if (currentLang === 'ar') {
-                switchToEnglish();
-                langText.textContent = 'العربية';
-            } else {
-                switchToArabic();
-                langText.textContent = 'English';
-            }
-        });
-    }
-}
-
-// تهيئة تبديل اللغة
-initLanguageSwitcher();
