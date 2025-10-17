@@ -1,6 +1,6 @@
 [MedicalAnalysisApp]
 
-Pulse - النظام الصحي الذكي 🏥#
+#Pulse - النظام الصحي الذكي 🏥
 
 <div align="center">
 
